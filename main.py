@@ -15,10 +15,17 @@ ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 # Connection မရရင် Error မတက်အောင် စစ်မယ်
 if not MONGO_URL:
     print("Error: MONGO_URL မရှိပါဘူး။ Koyeb Environment Variables မှာ ထည့်ပေးပါ။")
+    client = None
+    users_col = None
 else:
-    client = AsyncIOMotorClient(MONGO_URL)
-    db = client['anon_chat_db']
-    users_col = db['users']
+    try:
+        client = AsyncIOMotorClient(MONGO_URL)
+        db = client['anon_chat_db']
+        users_col = db['users']
+        print("MongoDB Connected Successfully!")
+    except Exception as e:
+        print(f"MongoDB Connection Error: {e}")
+        client = None
 
 # --- STATES ---
 GENDER, MENU = range(2)
@@ -28,12 +35,15 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # --- HELPER FUNCTIONS ---
 async def get_user(user_id):
+    if users_col is None: return None
     return await users_col.find_one({"user_id": user_id})
 
 async def update_status(user_id, status):
-    await users_col.update_one({"user_id": user_id}, {"$set": {"status": status}})
+    if users_col:
+        await users_col.update_one({"user_id": user_id}, {"$set": {"status": status}})
 
 async def find_partner(user_id):
+    if users_col is None: return None
     partner = await users_col.find_one({
         "status": "searching",
         "user_id": {"$ne": user_id}
@@ -65,14 +75,15 @@ async def set_gender(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("ကျေးဇူးပြု၍ Button နှိပ်ပြီး ရွေးပေးပါ။")
         return GENDER
 
-    new_user = {
-        "user_id": user.id,
-        "first_name": user.first_name,
-        "gender": gender,
-        "status": "idle",
-        "partner_id": None
-    }
-    await users_col.update_one({"user_id": user.id}, {"$set": new_user}, upsert=True)
+    if users_col:
+        new_user = {
+            "user_id": user.id,
+            "first_name": user.first_name,
+            "gender": gender,
+            "status": "idle",
+            "partner_id": None
+        }
+        await users_col.update_one({"user_id": user.id}, {"$set": new_user}, upsert=True)
     
     await update.message.reply_text(f"မှတ်တမ်းတင်ပြီးပါပြီ! {gender}")
     await show_main_menu(update)
@@ -171,13 +182,13 @@ async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_main_menu(update)
 
 async def stop_chat(user1_id, user2_id, context):
-    await users_col.update_one({"user_id": user1_id}, {"$set": {"status": "idle", "partner_id": None}})
-    if user2_id:
-        await users_col.update_one({"user_id": user2_id}, {"$set": {"status": "idle", "partner_id": None}})
+    if users_col:
+        await users_col.update_one({"user_id": user1_id}, {"$set": {"status": "idle", "partner_id": None}})
+        if user2_id:
+            await users_col.update_one({"user_id": user2_id}, {"$set": {"status": "idle", "partner_id": None}})
 
 # --- MAIN EXECUTION ---
 if __name__ == '__main__':
-    # Token မရှိရင် Run မရအောင် စစ်မယ်
     if not BOT_TOKEN:
         print("Error: BOT_TOKEN မရှိပါဘူး။ Koyeb Environment Variables မှာ ထည့်ပေးပါ။")
     else:
