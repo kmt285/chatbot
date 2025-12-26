@@ -1,7 +1,6 @@
 import logging
 import asyncio
 import os # ဒီ line အသစ်ထည့်ပါ
-from dotenv import load_dotenv # လိုရင်သုံးဖို့ (Optional)
 
 # --- CONFIGURATION (ဒီအပိုင်းကို ပြင်ပါ) ---
 # Code ထဲမှာ တိုက်ရိုက်မရေးဘဲ os.getenv နဲ့ ခေါ်သုံးပါမယ်
@@ -207,3 +206,4 @@ if __name__ == '__main__':
     print("Bot Started...")
 
     app.run_polling()
+
