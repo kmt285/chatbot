@@ -1,14 +1,15 @@
 import logging
 import asyncio
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
-from motor.motor_asyncio import AsyncIOMotorClient
+import os # ဒီ line အသစ်ထည့်ပါ
+from dotenv import load_dotenv # လိုရင်သုံးဖို့ (Optional)
 
-# --- CONFIGURATION ---
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
-MONGO_URL = "YOUR_MONGODB_URL_HERE"
-ADMIN_ID = 123456789 # သင့် Telegram ID ထည့်ပါ
+# --- CONFIGURATION (ဒီအပိုင်းကို ပြင်ပါ) ---
+# Code ထဲမှာ တိုက်ရိုက်မရေးဘဲ os.getenv နဲ့ ခေါ်သုံးပါမယ်
+BOT_TOKEN = os.getenv("BOT_TOKEN") 
+MONGO_URL = os.getenv("MONGO_URL")
+ADMIN_ID = int(os.getenv("ADMIN_ID", "0")) # Default 0 ထားမယ်
 
+# ကျန်တဲ့ Code များ အတိုင်းထားပါ...
 # --- DATABASE SETUP ---
 client = AsyncIOMotorClient(MONGO_URL)
 db = client['anon_chat_db']
@@ -204,4 +205,5 @@ if __name__ == '__main__':
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, message_relay))
 
     print("Bot Started...")
+
     app.run_polling()
